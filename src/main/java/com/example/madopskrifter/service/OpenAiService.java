@@ -1,9 +1,10 @@
-package com.example.chatgptjokes.service;
+package com.example.madopskrifter.service;
 
-import com.example.chatgptjokes.dtos.ChatCompletionRequest;
-import com.example.chatgptjokes.dtos.ChatCompletionResponse;
-import com.example.chatgptjokes.dtos.MyResponse;
+import com.example.madopskrifter.dtos.ChatCompletionRequest;
+import com.example.madopskrifter.dtos.ChatCompletionResponse;
+import com.example.madopskrifter.dtos.MyResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +27,7 @@ You will not truly benefit from WebClient unless you need to make several extern
 Additionally, the WebClient API is very clean, so if you are familiar with HTTP, it should be easy to
 understand what's going on in this code.
 */
-
+@RequiredArgsConstructor
 @Service
 public class OpenAiService {
 
@@ -60,13 +61,19 @@ public class OpenAiService {
   public double TOP_P;
 
   private WebClient client;
+  private final SallingGroupService sallingGroupService;
 
-  public OpenAiService() {
-    this.client = WebClient.create();
-  }
-  //Use this constructor for testing, to inject a mock client
-  public OpenAiService(WebClient client) {
-    this.client = client;
+
+
+  public MyResponse generateRecipeBasedOnProduct(String query) {
+    // 1. Hent produktinformation fra Salling Group API
+    String productInfo = sallingGroupService.fetchRelevantProductInfo(query);
+
+    // 2. Generer en prompt baseret på produktinformation
+    String userPrompt = "Lav en opskrift med følgende ingrediens: " + productInfo;
+
+    // 3. Send prompten til ChatGPT API
+    return makeRequest(userPrompt, "system message her hvis nødvendigt");
   }
 
   public MyResponse makeRequest(String userPrompt, String _systemMessage) {
