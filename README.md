@@ -27,7 +27,7 @@ Shows how to make custom responses that the ChatGPT AI has not been trained in.
 - [OpenAiService](https://github.com/RonniKahalani/chatgpt-jokes/blob/master/src/main/java/com/example/chatgptjokes/service/OpenAiService.java)
 - [OpenAiServiceV1](https://github.com/RonniKahalani/chatgpt-jokes/blob/master/src/main/java/com/example/chatgptjokes/service/OpenAiServiceV1.java)
 
-
+ø
 ## Frontend
 - [index.html](https://github.com/RonniKahalani/chatgpt-jokes/blob/master/src/main/resources/static/index.html)
 - [main.css](https://github.com/RonniKahalani/chatgpt-jokes/blob/master/src/main/resources/static/css/main.css)

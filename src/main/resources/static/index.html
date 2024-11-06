@@ -11,32 +11,34 @@
     <script defer src="./js/script.js"></script>
 </head>
 
-<body>
+<body class="bg-light">
 
-<div class="container">
-    <h2>Opskrifts API Demo</h2>
+<div class="container my-5">
+    <div class="text-center mb-5">
+        <h2 class="display-4 text-primary">Opskrifts API Demo</h2>
+        <p class="lead">Brug vores Opskrifts API til at finde lækre opskrifter nemt og hurtigt.</p>
+    </div>
 
-    <p>Dette projekt demonstrerer, hvordan man kan bruge Opskrifts API'et til at finde opskrifter.</p>
-
-    <div class="card m-3">
-        <div class="card-body">
-            <h5 class="card-title">Find Opskrift</h5>
+    <div class="card shadow-lg">
+        <div class="card-body p-4">
+            <h5 class="card-title text-center mb-4">Find en Opskrift</h5>
             <form id="form-recipe" class="container">
 
-                <div class="row">
-                    <label for="recipe-name">Opskriftens navn</label>
+                <div class="mb-3">
+                    <label for="recipe-name" class="form-label">Opskriftens navn</label>
                     <input type="text" id="recipe-name" class="form-control" placeholder="Indtast opskriftens navn">
                 </div>
-                <div class="row mt-3">
-                    <div class="col text-end">
-                        <button type="submit" class="btn btn-primary" id="btn-get-recipe">Find Opskrift</button>
-                    </div>
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg" id="btn-get-recipe">Find Opskrift</button>
                 </div>
             </form>
-            <div id="spinner" class="spinner-border text-success" role="status" style="display:none;">
+
+            <div id="spinner" class="spinner-border text-success d-block mx-auto my-4" role="status" style="display:none;">
                 <span class="visually-hidden">Indlæser...</span>
             </div>
-            <p id="result" class="result"></p>
+
+            <p id="result" class="result mt-4 text-center text-secondary"></p>
         </div>
     </div>
 </div>
