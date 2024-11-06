@@ -4,7 +4,6 @@ import com.example.madopskrifter.dtos.ChatCompletionRequest;
 import com.example.madopskrifter.dtos.ChatCompletionResponse;
 import com.example.madopskrifter.dtos.MyResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,32 +17,19 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 
-/*
-This code utilizes WebClient along with several other classes from org.springframework.web.reactive.
-However, the code is NOT reactive due to the use of the block() method, which bridges the reactive code (WebClient)
-to our imperative code (the way we have used Spring Boot up until now).
-
-You will not truly benefit from WebClient unless you need to make several external requests in parallel.
-Additionally, the WebClient API is very clean, so if you are familiar with HTTP, it should be easy to
-understand what's going on in this code.
-*/
-@RequiredArgsConstructor
 @Service
 public class OpenAiService {
 
-  public static final Logger logger = LoggerFactory.getLogger(OpenAiService.class);
+  private static final Logger logger = LoggerFactory.getLogger(OpenAiService.class);
 
   @Value("${app.api-key}")
   private String API_KEY;
 
-  //See here for a decent explanation of the parameters send to the API via the requestBody
-  //https://platform.openai.com/docs/api-reference/completions/create
-
   @Value("${app.url}")
-  public String URL;
+  private String URL;
 
   @Value("${app.model}")
-  public String MODEL;
+  private String MODEL;
 
   @Value("${app.temperature}")
   public double TEMPERATURE;
@@ -60,23 +46,19 @@ public class OpenAiService {
   @Value("${app.top_p}")
   public double TOP_P;
 
-  private WebClient client;
-  private final SallingGroupService sallingGroupService;
+  private final WebClient client;
 
-
-
-  public MyResponse generateRecipeBasedOnProduct(String query) {
-    // 1. Hent produktinformation fra Salling Group API
-    String productInfo = sallingGroupService.fetchRelevantProductInfo(query);
-
-    // 2. Generer en prompt baseret på produktinformation
-    String userPrompt = "Lav en opskrift med følgende ingrediens: " + productInfo;
-
-    // 3. Send prompten til ChatGPT API
-    return makeRequest(userPrompt, "system message her hvis nødvendigt");
+  public OpenAiService(WebClient.Builder webClientBuilder) {
+    this.client = webClientBuilder.build();
   }
 
-  public MyResponse makeRequest(String userPrompt, String _systemMessage) {
+  public MyResponse makeRequest(String userPrompt) {
+    // Opdater systemmeddelelsen, så OpenAI får instruktioner i at bruge Salling Group API
+    String systemMessage = "Du er en hjælpsom kok-assistent. Når du modtager en forespørgsel om en opskrift, " +
+            "skal du søge efter ingredienser på https://api.sallinggroup.com/v1-beta/product-suggestions/relevant-products " +
+            "baseret på brugerens forespørgsel. Foreslå en opskrift ved at bruge ingredienserne fra Salling Group API." +
+            "API'et kan tilgås ved at lave en GET-forespørgsel med parameteren 'query', som indeholder navnet på maden eller ingrediensen."+"Sæt en total sum af prisen for retten, for alle varende i bunden";
+
 
     ChatCompletionRequest requestDto = new ChatCompletionRequest();
     requestDto.setModel(MODEL);
@@ -85,7 +67,7 @@ public class OpenAiService {
     requestDto.setTop_p(TOP_P);
     requestDto.setFrequency_penalty(FREQUENCY_PENALTY);
     requestDto.setPresence_penalty(PRESENCE_PENALTY);
-    requestDto.getMessages().add(new ChatCompletionRequest.Message("system", _systemMessage));
+    requestDto.getMessages().add(new ChatCompletionRequest.Message("system", systemMessage));
     requestDto.getMessages().add(new ChatCompletionRequest.Message("user", userPrompt));
 
     ObjectMapper mapper = new ObjectMapper();
@@ -99,31 +81,19 @@ public class OpenAiService {
               .header("Authorization", "Bearer " + API_KEY)
               .contentType(MediaType.APPLICATION_JSON)
               .accept(MediaType.APPLICATION_JSON)
-              .body(BodyInserters.fromValue(json))
+              .body(BodyInserters.fromValue(requestDto))
               .retrieve()
               .bodyToMono(ChatCompletionResponse.class)
               .block();
+
       String responseMsg = response.getChoices().get(0).getMessage().getContent();
-      int tokensUsed = response.getUsage().getTotal_tokens();
-      System.out.print("Tokens used: " + tokensUsed);
-      System.out.print(". Cost ($0.0015 / 1K tokens) : $" + String.format("%6f",(tokensUsed * 0.0015 / 1000)));
-      System.out.println(". For 1$, this is the amount of similar requests you can make: " + Math.round(1/(tokensUsed * 0.0015 / 1000)));
       return new MyResponse(responseMsg);
-    }
-    catch (WebClientResponseException e){
-      //This is how you can get the status code and message reported back by the remote API
-      logger.error("Error response status code: " + e.getRawStatusCode());
-      logger.error("Error response body: " + e.getResponseBodyAsString());
-      logger.error("WebClientResponseException", e);
-      err = "Internal Server Error, due to a failed request to external service. You could try again" +
-              "( While you develop, make sure to consult the detailed error message on your backend)";
-      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, err);
-    }
-    catch (Exception e) {
-      logger.error("Exception", e);
-      err = "Internal Server Error - You could try again" +
-              "( While you develop, make sure to consult the detailed error message on your backend)";
-      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, err);
+    } catch (WebClientResponseException e) {
+      logger.error("Fejl fra OpenAI API: " + e.getResponseBodyAsString());
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Fejl ved generering af svar.");
+    } catch (Exception e) {
+      logger.error("Uventet fejl: ", e);
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Uventet fejl opstod.");
     }
   }
 }
