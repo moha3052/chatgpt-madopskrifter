@@ -1,34 +1,33 @@
 document.getElementById('btn-get-recipe').addEventListener('click', function(event) {
-    event.preventDefault(); // Forhindrer formularen i at sende og genindlæse siden
+    event.preventDefault();
     const userInput = document.getElementById('recipe-name').value;
 
     if (userInput.trim() === "") {
-        alert("Indtast venligst noget tekst");
+        alert("Please enter a recipe name");
         return;
     }
 
-    // Vis spinneren
     document.getElementById('spinner').style.display = 'block';
 
-    // Send forespørgsel til backend for at få en opskrift baseret på brugerens input
-    fetch(`http://localhost:8080/api/recipes/generate?query=${encodeURIComponent(userInput)}`, {
+    fetch(`http://localhost:8080/api/recipes/relevant?query=${encodeURIComponent(userInput)}`, {
         method: 'GET'
     })
         .then(response => response.json())
         .then(data => {
-            console.log(data);
-            // Tilføj AI's svar til resultatet
-            document.getElementById('result').textContent = data.answer;
+            // Check for the 'answer' field in the response
+            if (data && data.answer) {
+                document.getElementById('result').innerHTML = `<pre>${data.answer}</pre>`;
+            } else {
+                document.getElementById('result').innerHTML = "No recipe found.";
+            }
         })
         .catch(error => {
-            console.error("Fejl:", error);
-            document.getElementById('result').textContent = "Der opstod en fejl. Prøv venligst igen senere.";
+            document.getElementById('result').innerHTML = "An error occurred. Please try again.";
+            console.error("Error:", error);
         })
         .finally(() => {
-            // Skjul spinneren
             document.getElementById('spinner').style.display = 'none';
         });
 
-    // Ryd inputfeltet
     document.getElementById('recipe-name').value = '';
 });
