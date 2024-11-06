@@ -12,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
@@ -47,18 +46,19 @@ public class OpenAiService {
   public double TOP_P;
 
   private final WebClient client;
+  private final SallingGroupService sallingGroupService;
 
-  public OpenAiService(WebClient.Builder webClientBuilder) {
+  public OpenAiService(WebClient.Builder webClientBuilder, SallingGroupService sallingGroupService) {
     this.client = webClientBuilder.build();
+    this.sallingGroupService = sallingGroupService;
   }
 
   public MyResponse makeRequest(String userPrompt) {
-    // Opdater systemmeddelelsen, så OpenAI får instruktioner i at bruge Salling Group API
-    String systemMessage = "Du er en hjælpsom kok-assistent. Når du modtager en forespørgsel om en opskrift, " +
-            "skal du søge efter ingredienser på https://api.sallinggroup.com/v1-beta/product-suggestions/relevant-products " +
-            "baseret på brugerens forespørgsel. Foreslå en opskrift ved at bruge ingredienserne fra Salling Group API." +
-            "API'et kan tilgås ved at lave en GET-forespørgsel med parameteren 'query', som indeholder navnet på maden eller ingrediensen."+"Sæt en total sum af prisen for retten, for alle varende i bunden";
+    // Fetch relevant products from Salling Group API
+    String productData = sallingGroupService.getRelevantProducts(userPrompt);
 
+    String systemMessage = "Alt skal være på dansk"+"You are a helpful cooking assistant. Use the ingredients provided: " + productData +
+            "Jeg vil gerne have en historie bag maden, efter liste over ingredienser, efter det step-by-step guide, en total pris. hvor hende de forskellige vare købes";
 
     ChatCompletionRequest requestDto = new ChatCompletionRequest();
     requestDto.setModel(MODEL);
@@ -70,12 +70,7 @@ public class OpenAiService {
     requestDto.getMessages().add(new ChatCompletionRequest.Message("system", systemMessage));
     requestDto.getMessages().add(new ChatCompletionRequest.Message("user", userPrompt));
 
-    ObjectMapper mapper = new ObjectMapper();
-    String json = "";
-    String err =  null;
     try {
-      json = mapper.writeValueAsString(requestDto);
-      System.out.println(json);
       ChatCompletionResponse response = client.post()
               .uri(new URI(URL))
               .header("Authorization", "Bearer " + API_KEY)
@@ -88,12 +83,9 @@ public class OpenAiService {
 
       String responseMsg = response.getChoices().get(0).getMessage().getContent();
       return new MyResponse(responseMsg);
-    } catch (WebClientResponseException e) {
-      logger.error("Fejl fra OpenAI API: " + e.getResponseBodyAsString());
-      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Fejl ved generering af svar.");
     } catch (Exception e) {
-      logger.error("Uventet fejl: ", e);
-      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Uventet fejl opstod.");
+      logger.error("Unexpected error: ", e);
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while generating the response.");
     }
   }
 }

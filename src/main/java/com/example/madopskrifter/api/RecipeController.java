@@ -2,6 +2,7 @@ package com.example.madopskrifter.api;
 
 import com.example.madopskrifter.dtos.MyResponse;
 import com.example.madopskrifter.service.OpenAiService;
+import com.example.madopskrifter.service.SallingGroupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,16 +14,12 @@ import org.springframework.web.bind.annotation.*;
 public class RecipeController {
 
   private final OpenAiService openAiService;
+  private final SallingGroupService sallingGroupService;
 
   // Endpoint til at generere opskrifter via OpenAI
-  @GetMapping("/generate")
-  public ResponseEntity<MyResponse> genererOpskrift(@RequestParam("query") String query) {
-    try {
-      // Send forespørgsel til OpenAI for at generere opskrift
-      MyResponse response = openAiService.makeRequest(query);
-      return ResponseEntity.ok(response);
-    } catch (Exception e) {
-      return ResponseEntity.status(500).body(new MyResponse("Intern serverfejl opstod under generering af opskriften."));
-    }
+  @GetMapping("/relevant")
+  public ResponseEntity<MyResponse> getRecipe(@RequestParam String query) {
+    MyResponse response = openAiService.makeRequest(query);
+    return ResponseEntity.ok(response);
   }
 }
