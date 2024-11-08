@@ -1,0 +1,52 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+#foodList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.food-item {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    width: 150px;
+}
+
+.food-item.selected {
+    background-color: #d3ffd3;
+    border-color: green;
+}
+
+img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+}
+
+button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#recipeList {
+    margin-top: 20px;
+}
+
+#spinner {
+    margin-top: 20px;
+    color: #96fbff;
+}
+

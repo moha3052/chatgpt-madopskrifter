@@ -1,3 +1,5 @@
+const BASE_URL = "http://localhost:8080"
+
 document.getElementById('btn-get-recipe').addEventListener('click', function(event) {
     event.preventDefault();
     const userInput = document.getElementById('recipe-name').value;
@@ -9,7 +11,7 @@ document.getElementById('btn-get-recipe').addEventListener('click', function(eve
 
     document.getElementById('spinner').style.display = 'block';
 
-    fetch(`http://localhost:8080/api/recipes/relevant?query=${encodeURIComponent(userInput)}`, {
+    fetch(`${BASE_URL}/api/recipes/relevant?query=${encodeURIComponent(userInput)}`, {
         method: 'GET'
     })
         .then(response => response.json())

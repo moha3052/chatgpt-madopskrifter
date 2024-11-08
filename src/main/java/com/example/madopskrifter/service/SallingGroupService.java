@@ -1,5 +1,6 @@
 package com.example.madopskrifter.service;
 
+import com.example.madopskrifter.dtos.ClearanceResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -28,17 +29,22 @@ public class SallingGroupService {
     }
 
 
-    public String getRelevantProducts(String query) {
+
+
+    public ClearanceResponseDTO wasteFood() {
+        String URL = "https://api.sallinggroup.com/v1/food-waste/efba0457-090e-4132-81ba-c72b4c8e7fee";
         try {
             return this.client.get()
-                    .uri("https://api.sallinggroup.com/v1-beta/product-suggestions/relevant-products?query={query}", query)
+                    .uri(URL)
                     .header("Authorization", "Bearer " + sallingApiKey)
                     .retrieve()
-                    .bodyToMono(String.class)
+                    .bodyToMono(ClearanceResponseDTO.class)
                     .block();
         } catch (WebClientResponseException e) {
             logger.error("API call error: " + e.getResponseBodyAsString());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "There was an error with the request");
         }
     }
+
+
 }

@@ -5,14 +5,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Product {
+public class ClearanceResponseDTO {
 
-    private String title;
-    private String description;
-    private double price;
-    private String imageUrl;
+    List<ClearanceDTO> clearances;
 }

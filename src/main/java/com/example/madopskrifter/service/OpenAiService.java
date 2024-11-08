@@ -1,9 +1,6 @@
 package com.example.madopskrifter.service;
 
-import com.example.madopskrifter.dtos.ChatCompletionRequest;
-import com.example.madopskrifter.dtos.ChatCompletionResponse;
-import com.example.madopskrifter.dtos.MyResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.madopskrifter.dtos.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +12,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class OpenAiService {
@@ -53,13 +53,18 @@ public class OpenAiService {
     this.sallingGroupService = sallingGroupService;
   }
 
-  public MyResponse makeRequest(String userPrompt) {
-    // Fetch relevant products from Salling Group API
-    String productData = sallingGroupService.getRelevantProducts(userPrompt);
+  public MyResponse generateRecipes(List<String> selectedProductNames) {
+    // Hent relevante produkter fra Salling Group API (hvis nødvendigt)
+    ClearanceResponseDTO productData = sallingGroupService.wasteFood(); // Eksempel på, hvordan du henter produkter
+    List<String> productNames = getProductNamesByNames(productData, selectedProductNames); // Hent produktnavne ud fra valgte produkter
 
-    String systemMessage = "Alt skal være på dansk"+"You are a helpful cooking assistant. Use the ingredients provided: " + productData +
-            "Jeg vil gerne have en historie bag maden, efter liste over ingredienser, efter det step-by-step guide, en total pris. hvor hende de forskellige vare købes";
+    // Byg system-beskeden
+    String systemMessage = "Alt skal være på dansk. You are a helpful cooking assistant. " +
+            "Use the ingredients provided: " + productNames + ". " +
+            "Jeg vil gerne have en historie bag maden, efter liste over ingredienser, efter det step-by-step guide, en total pris. " +
+            "Hvor hende de forskellige vare købes.";
 
+    // Forbered OpenAI forespørgsel
     ChatCompletionRequest requestDto = new ChatCompletionRequest();
     requestDto.setModel(MODEL);
     requestDto.setTemperature(TEMPERATURE);
@@ -68,8 +73,9 @@ public class OpenAiService {
     requestDto.setFrequency_penalty(FREQUENCY_PENALTY);
     requestDto.setPresence_penalty(PRESENCE_PENALTY);
     requestDto.getMessages().add(new ChatCompletionRequest.Message("system", systemMessage));
-    requestDto.getMessages().add(new ChatCompletionRequest.Message("user", userPrompt));
+    requestDto.getMessages().add(new ChatCompletionRequest.Message("user", "Lav en opskrift med de følgende ingredienser: " + String.join(", ", productNames)));
 
+    // Send forespørgslen og returner svar
     try {
       ChatCompletionResponse response = client.post()
               .uri(new URI(URL))
@@ -87,5 +93,12 @@ public class OpenAiService {
       logger.error("Unexpected error: ", e);
       throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while generating the response.");
     }
+  }
+
+  private List<String> getProductNamesByNames(ClearanceResponseDTO productData, List<String> selectedProductNames) {
+    return productData.getClearances().stream()
+            .filter(product -> selectedProductNames.contains(product.getProduct().getDescription().toLowerCase())) // Filtrer produkter baseret på navnet
+            .map(product -> product.getProduct().getDescription())  // Hent navnet (description) fra produktet
+            .collect(Collectors.toList());  // Saml de matchende navne i en liste
   }
 }
