@@ -22,6 +22,7 @@ async function fetchWasteFood() {
 }
 
 // Funktion til at vise madvarer på siden
+// Funktion til at vise madvarer på siden
 function displayFoodItems(foodData) {
     const foodList = document.getElementById('foodList');
     foodList.innerHTML = ""; // Tømmer listen før indlæsning af nye data
@@ -36,7 +37,19 @@ function displayFoodItems(foodData) {
         const originalPrice = food.offer && food.offer.originalPrice ? food.offer.originalPrice : 'Ikke tilgængelig';
         const newPrice = food.offer && food.offer.newPrice ? food.offer.newPrice : 'Ikke tilgængelig';
         const discount = food.offer && food.offer.discount ? food.offer.discount : 'Ikke tilgængelig'; // Brug discount direkte fra API-dataen
-        // Tjek for billeder og priser
+
+        // Opret checkbox elementet
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.id = `checkbox-${food.product.id}`;
+        checkbox.value = food.product.id;
+
+        // Tilføj label og checkbox til food-item
+        const label = document.createElement("label");
+        label.setAttribute("for", checkbox.id);
+        label.textContent = food.product.description;
+
+        // Tilføj til food-item
         foodItem.innerHTML = `
             <img src="${imageSrc}" alt="${food.product.name}">
             <p>${food.product.description}</p>
@@ -45,31 +58,44 @@ function displayFoodItems(foodData) {
             <p>Spar: ${discount} DKK</p>
         `;
 
-        // Tilføj event listener til at vælge eller afvælge madvarer
-        foodItem.addEventListener("click", () => toggleSelection(food, foodItem));
+        // Tilføj checkbox og label til madvare item
+        foodItem.appendChild(checkbox);
+        foodItem.appendChild(label);
 
+        // Event listener for klik på madvare
+        foodItem.addEventListener("click", () => toggleCheckbox(checkbox));
+
+        // Event listener for checkbox ændringer
+        checkbox.addEventListener("change", () => toggleSelection(food, checkbox));
+
+        // Tilføj madvare til listen
         foodList.appendChild(foodItem);
     });
 }
 
-
-// Funktion til at vælge/afvælge madvarer
-function toggleSelection(food, foodItem) {
-    const isSelected = selectedItems.includes(food);
-
-    if (isSelected) {
-        selectedItems = selectedItems.filter(item => item.id !== food.id);
-        foodItem.classList.remove("selected");
-    } else {
-        selectedItems.push(food);
-        foodItem.classList.add("selected");
-    }
+// Funktion til at håndtere checkbox tilstand (flueben eller ikke)
+function toggleCheckbox(checkbox) {
+    checkbox.checked = !checkbox.checked; // Skift checkbox'ens tilstand
+    checkbox.dispatchEvent(new Event('change')); // Trigger change event for at opdatere selectedItems
 }
 
-// Funktion til at generere opskrifter baseret på valgte varer
+// Funktion til at vælge/afvælge madvarer via checkbox
+function toggleSelection(food, checkbox) {
+    const isSelected = checkbox.checked;
+
+    if (isSelected) {
+        selectedItems.push(food); // Tilføj til listen
+    } else {
+        selectedItems = selectedItems.filter(item => item.id !== food.id); // Fjern fra listen
+    }
+
+    console.log("Valgte madvarer:", selectedItems);
+}
+
+
 async function generateRecipes() {
     const recipeList = document.getElementById('recipeList');
-    recipeList.innerHTML = ""; // Tømmer opskriftslisten
+    recipeList.innerHTML = ""; // Tøm opskriftslisten
 
     if (selectedItems.length === 0) {
         recipeList.innerHTML = "<p>Vælg venligst nogle varer for at generere opskrifter.</p>";
@@ -80,9 +106,10 @@ async function generateRecipes() {
     document.getElementById('spinner').style.display = 'block';
 
     try {
-        // Send en GET-forespørgsel med de valgte varer
+        // Send de valgte varer til backend
         const selectedNames = selectedItems.map(item => item.product.description).join(',');  // Brug description i stedet for ean
-        console.log("Selected items:", selectedItems);
+        console.log("Valgte varer:", selectedItems);
+
         const response = await fetch(`${BASE_URL}/api/recipes/generate?selectedProductNames=${encodeURIComponent(selectedNames)}`, {
             method: 'GET'
         });
@@ -92,13 +119,12 @@ async function generateRecipes() {
         }
 
         const data = await response.json();
+        console.log("Backend svar:", data);
         // Tjek om der er opskrifter
-        if (data && data.recipes && data.recipes.length > 0) {
-            data.recipes.forEach(recipe => {
-                const recipeItem = document.createElement("p");
-                recipeItem.textContent = recipe;
-                recipeList.appendChild(recipeItem);
-            });
+        if (data && data) {
+            const recipeItem = document.createElement("p");
+            recipeItem.textContent = data;  // Brug answer som opskriften
+            recipeList.appendChild(recipeItem);
         } else {
             recipeList.innerHTML = "Ingen opskrifter fundet.";
         }
@@ -110,9 +136,8 @@ async function generateRecipes() {
     }
 }
 
-
-// Event Listener for knappen til at generere opskrifter
 document.getElementById("generateRecipes").addEventListener("click", generateRecipes);
+
 
 // Initial indlæsning af madspildsvarer
 fetchWasteFood();

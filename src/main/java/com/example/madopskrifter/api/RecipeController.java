@@ -5,6 +5,7 @@ import com.example.madopskrifter.dtos.ClearanceResponseDTO;
 import com.example.madopskrifter.service.OpenAiService;
 import com.example.madopskrifter.service.SallingGroupService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,17 +26,22 @@ public class RecipeController {
     return ResponseEntity.ok(response);
   }
 
-  // Endpoint til at generere opskrifter via OpenAI
   @GetMapping("generate")
-  public ResponseEntity<MyResponse> getRecipe(@RequestParam List<String> selectedProductNames) {
-    System.out.println("Selected product names: " + selectedProductNames);
+  public ResponseEntity<MyResponse> generateRecipe(@RequestParam List<String> selectedProductNames) {
     if (selectedProductNames.isEmpty()) {
       return ResponseEntity.badRequest().body(new MyResponse("Ingen varer valgt. Vælg venligst varer."));
     }
 
-    MyResponse response = openAiService.generateRecipes(selectedProductNames);
-    return ResponseEntity.ok(response);
+    try {
+      // Generer opskrifter ved at sende de valgte produkter til OpenAI
+      MyResponse response = openAiService.generateRecipes(selectedProductNames);
+      return ResponseEntity.ok(response);
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+              .body(new MyResponse("Der opstod en fejl under genereringen af opskrifter."));
+    }
   }
+
 
 
 

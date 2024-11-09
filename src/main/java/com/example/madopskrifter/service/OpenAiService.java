@@ -12,7 +12,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -54,15 +53,23 @@ public class OpenAiService {
   }
 
   public MyResponse generateRecipes(List<String> selectedProductNames) {
-    // Hent relevante produkter fra Salling Group API (hvis nødvendigt)
-    ClearanceResponseDTO productData = sallingGroupService.wasteFood(); // Eksempel på, hvordan du henter produkter
-    List<String> productNames = getProductNamesByNames(productData, selectedProductNames); // Hent produktnavne ud fra valgte produkter
+    // Hent relevante produkter fra Salling Group API (de på tilbud)
+    ClearanceResponseDTO productData = sallingGroupService.wasteFood();
+    List<String> productNames = getProductNamesByNames(productData, selectedProductNames);
 
-    // Byg system-beskeden
+    if (productNames.isEmpty()) {
+      logger.warn("Ingen matchende produkter fundet for de valgte navne: " + selectedProductNames);
+      return new MyResponse("Ingen opskrifter fundet for de valgte ingredienser.");
+    }
+
+    // Log systembesked og de valgte ingredienser
     String systemMessage = "Alt skal være på dansk. You are a helpful cooking assistant. " +
             "Use the ingredients provided: " + productNames + ". " +
-            "Jeg vil gerne have en historie bag maden, efter liste over ingredienser, efter det step-by-step guide, en total pris. " +
-            "Hvor hende de forskellige vare købes.";
+            "Lav en opskrift med de følgende ingredienser"+ "inkludér en step-by-step guide, en total pris";
+
+    logger.info("System message: " + systemMessage);  // Log system message
+
+    logger.info("Forespørgsel til OpenAI med ingredienser: " + productNames);
 
     // Forbered OpenAI forespørgsel
     ChatCompletionRequest requestDto = new ChatCompletionRequest();
@@ -87,18 +94,27 @@ public class OpenAiService {
               .bodyToMono(ChatCompletionResponse.class)
               .block();
 
+      // Log API respons
+      logger.info("OpenAI API response: " + response);  // Log response object
+      if (response == null || response.getChoices().isEmpty()) {
+        logger.warn("Ingen gyldige svar modtaget fra OpenAI.");
+        return new MyResponse("Ingen opskrifter fundet.");
+      }
+
       String responseMsg = response.getChoices().get(0).getMessage().getContent();
       return new MyResponse(responseMsg);
     } catch (Exception e) {
-      logger.error("Unexpected error: ", e);
-      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while generating the response.");
+      logger.error("Uventet fejl: ", e);
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "En fejl opstod under generering af svaret.");
     }
   }
 
+
   private List<String> getProductNamesByNames(ClearanceResponseDTO productData, List<String> selectedProductNames) {
     return productData.getClearances().stream()
-            .filter(product -> selectedProductNames.contains(product.getProduct().getDescription().toLowerCase())) // Filtrer produkter baseret på navnet
-            .map(product -> product.getProduct().getDescription())  // Hent navnet (description) fra produktet
-            .collect(Collectors.toList());  // Saml de matchende navne i en liste
+            .filter(product -> selectedProductNames.stream()
+                    .anyMatch(selectedName -> selectedName.equalsIgnoreCase(product.getProduct().getDescription())))
+            .map(product -> product.getProduct().getDescription())
+            .collect(Collectors.toList());
   }
 }

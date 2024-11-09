@@ -1,52 +1,119 @@
+/* Generel styling for body */
 body {
     font-family: Arial, sans-serif;
+    background-color: #f4f4f9; /* Lys baggrund for at gøre siden behagelig at se på */
+    margin: 0;
     padding: 20px;
+    color: #333;
 }
 
+/* Styling af overskriften */
+h1 {
+    text-align: center;
+    color: #2c3e50; /* Mørkeblå farve til overskriften */
+    font-size: 2rem;
+    margin-bottom: 30px;
+}
+
+/* Madvarer container */
 #foodList {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 15px;
+    justify-content: center; /* Centrer madvarerne */
+    margin-bottom: 20px;
 }
 
+/* Hver madvare */
 .food-item {
+    background-color: #fff;
     border: 1px solid #ddd;
-    padding: 10px;
+    border-radius: 10px;
+    width: 180px;
+    padding: 15px;
     text-align: center;
     cursor: pointer;
-    width: 150px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.food-item:hover {
+    transform: scale(1.05); /* Glidende zoom-effekt på hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Større skygge ved hover */
 }
 
 .food-item.selected {
-    background-color: #d3ffd3;
+    background-color: #d3ffd3; /* Grøn baggrund når valgt */
     border-color: green;
 }
 
-img {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
+/* Billede af madvaren */
+.food-item img {
+    width: 100%; /* Billedet fylder hele bredden af madvarekortet */
+    height: 120px; /* Giver en fast højde for billederne */
+    object-fit: cover; /* Sørger for at billedet skaleres korrekt */
+    border-radius: 8px;
+    margin-bottom: 10px; /* Mellemrum mellem billede og tekst */
 }
 
-button {
-    margin-top: 20px;
-    padding: 10px 20px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
+/* Checkbox styling */
+input[type="checkbox"] {
+    margin-top: 10px;
     cursor: pointer;
 }
 
-button:hover {
-    background-color: #45a049;
-}
-
-#recipeList {
+/* Button styling */
+button {
+    display: block;
+    width: 100%;
+    padding: 12px 20px;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
     margin-top: 20px;
 }
 
+button:hover {
+    background-color: #45a049; /* Mørkere grøn ved hover */
+}
+
+/* Styling for opskriftslisten */
+#recipeList {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    font-size: 1.1rem;
+    color: #34495e;
+}
+
+/* Spinner styling */
 #spinner {
     margin-top: 20px;
     color: #96fbff;
+    font-size: 1.2rem;
+    text-align: center;
 }
 
+/* Responsivitet - Madvarer bliver stacket på små skærme */
+@media (max-width: 768px) {
+    #foodList {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .food-item {
+        width: 90%; /* Gør madvare-elementer bredere på små skærme */
+    }
+
+    button {
+        width: auto;
+    }
+}
