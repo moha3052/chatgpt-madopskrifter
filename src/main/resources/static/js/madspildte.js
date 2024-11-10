@@ -47,7 +47,7 @@ function displayFoodItems(foodData) {
         // Tilføj label og checkbox til food-item
         const label = document.createElement("label");
         label.setAttribute("for", checkbox.id);
-        label.textContent = food.product.description;
+
 
         // Tilføj til food-item
         foodItem.innerHTML = `
@@ -102,8 +102,6 @@ async function generateRecipes() {
         return;
     }
 
-    // Vis spinner mens vi henter opskrifter
-    document.getElementById('spinner').style.display = 'block';
 
     try {
         // Send de valgte varer til backend
@@ -118,16 +116,31 @@ async function generateRecipes() {
             throw new Error("Fejl ved hentning af opskrifter");
         }
 
+        // Hent spinner-elementet
+        const spinner = document.getElementById("spinner");
+
+// Vis spinneren, når dataene hentes
+        spinner.style.display = "block";
+
+// Hent data fra backend
         const data = await response.json();
-        console.log("Backend svar:", data);
-        // Tjek om der er opskrifter
-        if (data && data) {
+        console.log("Modtaget data fra backend:", data);
+
+
+// Skjul spinneren, når dataene er hentet
+        spinner.style.display = "none";
+
+        console.log("Backend svar:", data.answer);
+
+// Tjek om data.message har en answer egenskab
+        if (data.answer && data.answer) {
             const recipeItem = document.createElement("p");
-            recipeItem.textContent = data;  // Brug answer som opskriften
+            recipeItem.textContent = data.answer; // Brug answer fra API-svaret
             recipeList.appendChild(recipeItem);
         } else {
             recipeList.innerHTML = "Ingen opskrifter fundet.";
         }
+
     } catch (error) {
         recipeList.innerHTML = "En fejl opstod, prøv venligst igen.";
         console.error("Fejl:", error);
@@ -135,6 +148,9 @@ async function generateRecipes() {
         document.getElementById('spinner').style.display = 'none';
     }
 }
+
+
+
 
 document.getElementById("generateRecipes").addEventListener("click", generateRecipes);
 
